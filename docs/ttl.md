@@ -56,7 +56,7 @@ When the `external-dns.alpha.kubernetes.io/ttl` annotation is not provided, the 
 
 ### AWS Provider
 The AWS Provider overrides the value to 300s when the TTL is 0.
-This value is a constant in the provider code.
+This value can be adjusted with `--aws-default-ttl` flag.
 
 ## Azure
 TTL value should be between 1 and 2,147,483,647 seconds.

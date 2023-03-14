@@ -209,6 +209,7 @@ func main() {
 				PreferCNAME:          cfg.AWSPreferCNAME,
 				DryRun:               cfg.DryRun,
 				ZoneCacheDuration:    cfg.AWSZoneCacheDuration,
+				DefaultTTL:           cfg.AWSDefaultTTL,
 			},
 		)
 	case "aws-sd":

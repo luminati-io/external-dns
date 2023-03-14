@@ -39,6 +39,7 @@ import (
 )
 
 const (
+	recordTTL                   = 300
 	defaultBatchChangeSize      = 4000
 	defaultBatchChangeInterval  = time.Second
 	defaultEvaluateTargetHealth = true
@@ -1436,6 +1437,7 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilte
 		dryRun:               false,
 		zonesCache:           &zonesListCache{duration: 1 * time.Minute},
 		failedChangesQueue:   make(map[string]Route53Changes),
+		defaultTTL:           recordTTL,
 	}
 
 	createAWSZone(t, provider, &route53.HostedZone{

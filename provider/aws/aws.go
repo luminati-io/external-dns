@@ -39,7 +39,6 @@ import (
 )
 
 const (
-	recordTTL = 300
 	// From the experiments, it seems that the default MaxItems applied is 100,
 	// and that, on the server side, there is a hard limit of 300 elements per page.
 	// After a discussion with AWS representants, clients should accept
@@ -181,6 +180,7 @@ type AWSProvider struct {
 	zonesCache    *zonesListCache
 	// queue for collecting changes to submit them in the next iteration, but after all other changes
 	failedChangesQueue map[string]Route53Changes
+	defaultTTL         int64
 }
 
 // AWSConfig contains configuration to create a new AWS provider.
@@ -198,6 +198,7 @@ type AWSConfig struct {
 	PreferCNAME          bool
 	DryRun               bool
 	ZoneCacheDuration    time.Duration
+	DefaultTTL           int64
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
@@ -246,6 +247,7 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 		dryRun:               awsConfig.DryRun,
 		zonesCache:           &zonesListCache{duration: awsConfig.ZoneCacheDuration},
 		failedChangesQueue:   make(map[string]Route53Changes),
+		defaultTTL:           awsConfig.DefaultTTL,
 	}
 
 	return provider, nil
@@ -364,7 +366,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 			if r.AliasTarget != nil {
 				// Alias records don't have TTLs so provide the default to match the TXT generation
 				if ttl == 0 {
-					ttl = recordTTL
+					ttl = endpoint.TTL(p.defaultTTL)
 				}
 				ep := endpoint.
 					NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeCNAME, ttl, aws.StringValue(r.AliasTarget.DNSName)).
@@ -720,7 +722,7 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint) (*Route53C
 	} else {
 		change.ResourceRecordSet.Type = aws.String(ep.RecordType)
 		if !ep.RecordTTL.IsConfigured() {
-			change.ResourceRecordSet.TTL = aws.Int64(recordTTL)
+			change.ResourceRecordSet.TTL = aws.Int64(p.defaultTTL)
 		} else {
 			change.ResourceRecordSet.TTL = aws.Int64(int64(ep.RecordTTL))
 		}
