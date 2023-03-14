@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -44,26 +45,31 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 		title            string
 		annotationFilter string
 		fqdnTemplate     string
+		labelSelector    labels.Selector
 		expectError      bool
 	}{
 		{
-			title:        "invalid template",
-			expectError:  true,
-			fqdnTemplate: "{{.Name",
+			title:         "invalid template",
+			expectError:   true,
+			fqdnTemplate:  "{{.Name",
+			labelSelector: labels.Everything(),
 		},
 		{
-			title:       "valid empty template",
-			expectError: false,
+			title:         "valid empty template",
+			expectError:   false,
+			labelSelector: labels.Everything(),
 		},
 		{
-			title:        "valid template",
-			expectError:  false,
-			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
+			title:         "valid template",
+			expectError:   false,
+			fqdnTemplate:  "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
+			labelSelector: labels.Everything(),
 		},
 		{
 			title:            "non-empty annotation filter label",
 			expectError:      false,
 			annotationFilter: "kubernetes.io/ingress.class=nginx",
+			labelSelector:    labels.Everything(),
 		},
 	} {
 		ti := ti
@@ -75,6 +81,7 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 				fake.NewSimpleClientset(),
 				ti.annotationFilter,
 				ti.fqdnTemplate,
+				ti.labelSelector,
 			)
 
 			if ti.expectError {
@@ -94,6 +101,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		title            string
 		annotationFilter string
 		fqdnTemplate     string
+		labelSelector    labels.Selector
 		nodeName         string
 		nodeAddresses    []v1.NodeAddress
 		labels           map[string]string
@@ -105,6 +113,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"node with short hostname returns one endpoint",
 			"",
 			"",
+			labels.Everything(),
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
@@ -118,6 +127,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"node with fqdn returns one endpoint",
 			"",
 			"",
+			labels.Everything(),
 			"node1.example.org",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
@@ -131,6 +141,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"node with fqdn template returns endpoint with expanded hostname",
 			"",
 			"{{.Name}}.example.org",
+			labels.Everything(),
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
@@ -144,6 +155,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"node with fqdn and fqdn template returns one endpoint",
 			"",
 			"{{.Name}}.example.org",
+			labels.Everything(),
 			"node1.example.org",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
@@ -157,6 +169,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"node with fqdn template returns two endpoints with multiple IP addresses and expanded hostname",
 			"",
 			"{{.Name}}.example.org",
+			labels.Everything(),
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeExternalIP, Address: "5.6.7.8"}},
 			map[string]string{},
@@ -170,6 +183,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"node with both external and internal IP returns an endpoint with external IP",
 			"",
 			"",
+			labels.Everything(),
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2.3.4.5"}},
 			map[string]string{},
@@ -183,6 +197,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"node with only internal IP returns an endpoint with internal IP",
 			"",
 			"",
+			labels.Everything(),
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}},
 			map[string]string{},
@@ -196,6 +211,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"node with neither external nor internal IP returns no endpoints",
 			"",
 			"",
+			labels.Everything(),
 			"node1",
 			[]v1.NodeAddress{},
 			map[string]string{},
@@ -207,6 +223,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"annotated node without annotation filter returns endpoint",
 			"",
 			"",
+			labels.Everything(),
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
@@ -222,6 +239,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"annotated node with matching annotation filter returns endpoint",
 			"service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
 			"",
+			labels.Everything(),
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
@@ -237,6 +255,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"annotated node with non-matching annotation filter returns endpoint",
 			"service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
 			"",
+			labels.Everything(),
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
@@ -250,6 +269,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"our controller type is dns-controller",
 			"",
 			"",
+			labels.Everything(),
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
@@ -265,6 +285,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"different controller types are ignored",
 			"",
 			"",
+			labels.Everything(),
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
@@ -278,6 +299,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"ttl not annotated should have RecordTTL.IsConfigured set to false",
 			"",
 			"",
+			labels.Everything(),
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
@@ -291,6 +313,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"ttl annotated but invalid should have RecordTTL.IsConfigured set to false",
 			"",
 			"",
+			labels.Everything(),
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
@@ -306,6 +329,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"ttl annotated and is valid should set Record.TTL",
 			"",
 			"",
+			labels.Everything(),
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			map[string]string{},
@@ -321,6 +345,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			"node with nil Lables returns valid endpoint",
 			"",
 			"",
+			labels.Everything(),
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			nil,
@@ -328,6 +353,36 @@ func testNodeSourceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, Labels: map[string]string{}},
 			},
+			false,
+		},
+		{
+			"node with labels that match label filter returns endpoint",
+			"",
+			"",
+			labels.SelectorFromSet(labels.Set{"node-label": "include"}),
+			"node1",
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			map[string]string{
+				"node-label": "include",
+			},
+			map[string]string{},
+			[]*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			false,
+		},
+		{
+			"node with labels that don't match label filter is ignored",
+			"",
+			"",
+			labels.SelectorFromSet(labels.Set{"node-label": "include"}),
+			"node1",
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			map[string]string{
+				"node-label": "exclude",
+			},
+			map[string]string{},
+			[]*endpoint.Endpoint{},
 			false,
 		},
 	} {
@@ -358,6 +413,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				kubernetes,
 				tc.annotationFilter,
 				tc.fqdnTemplate,
+				tc.labelSelector,
 			)
 			require.NoError(t, err)
 
