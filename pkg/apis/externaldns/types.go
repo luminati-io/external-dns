@@ -200,6 +200,7 @@ type Config struct {
 	PiholeTLSInsecureSkipVerify       bool
 	PluralCluster                     string
 	PluralProvider                    string
+	SuppressIPv6                      bool
 }
 
 var defaultConfig = &Config{
@@ -343,6 +344,7 @@ var defaultConfig = &Config{
 	PiholeTLSInsecureSkipVerify: false,
 	PluralCluster:               "",
 	PluralProvider:              "",
+	SuppressIPv6:                false,
 }
 
 // NewConfig returns new Config object
@@ -580,6 +582,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("log-format", "The format in which log messages are printed (default: text, options: text, json)").Default(defaultConfig.LogFormat).EnumVar(&cfg.LogFormat, "text", "json")
 	app.Flag("metrics-address", "Specify where to serve the metrics and health check endpoint (default: :7979)").Default(defaultConfig.MetricsAddress).StringVar(&cfg.MetricsAddress)
 	app.Flag("log-level", "Set the level of logging. (default: info, options: panic, debug, info, warning, error, fatal").Default(defaultConfig.LogLevel).EnumVar(&cfg.LogLevel, allLogLevelsAsStrings()...)
+	app.Flag("suppress-ipv6", "Filter out IPv6 addresses from source endpoints to avoid compatibility issues").Default("false").BoolVar(&cfg.SuppressIPv6)
 
 	_, err := app.Parse(args)
 	if err != nil {

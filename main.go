@@ -164,6 +164,10 @@ func main() {
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources, sourceCfg.DefaultTargets))
 	endpointsSource = source.NewTargetFilterSource(endpointsSource, targetFilter)
 
+	if cfg.SuppressIPv6 {
+		endpointsSource = source.NewSuppressedSource(endpointsSource)
+	}
+
 	// RegexDomainFilter overrides DomainFilter
 	var domainFilter endpoint.DomainFilter
 	if cfg.RegexDomainFilter.String() != "" {
