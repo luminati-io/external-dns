@@ -2,17 +2,18 @@ package source
 
 import (
 	"context"
-	log "github.com/sirupsen/logrus"
 	"net"
+
+	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-type suppressedSource struct {
+type suppressIPv6Source struct {
 	unfiltered Source
 }
 
-func NewSuppressedSource(original Source) Source {
-	return &suppressedSource{
+func NewSuppressIPv6Source(original Source) Source {
+	return &suppressIPv6Source{
 		unfiltered: original,
 	}
 }
@@ -31,7 +32,7 @@ func getIp4Targets(targets endpoint.Targets) endpoint.Targets {
 	return result
 }
 
-func (s *suppressedSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (s *suppressIPv6Source) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints, err := s.unfiltered.Endpoints(ctx)
 	if err != nil {
 		return endpoints, err
@@ -52,6 +53,6 @@ func (s *suppressedSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 	return results, nil
 }
 
-func (s *suppressedSource) AddEventHandler(ctx context.Context, f func()) {
+func (s *suppressIPv6Source) AddEventHandler(ctx context.Context, f func()) {
 	s.unfiltered.AddEventHandler(ctx, f)
 }

@@ -165,7 +165,7 @@ func main() {
 	endpointsSource = source.NewTargetFilterSource(endpointsSource, targetFilter)
 
 	if cfg.SuppressIPv6 {
-		endpointsSource = source.NewSuppressedSource(endpointsSource)
+		endpointsSource = source.NewSuppressIPv6Source(endpointsSource)
 	}
 
 	// RegexDomainFilter overrides DomainFilter

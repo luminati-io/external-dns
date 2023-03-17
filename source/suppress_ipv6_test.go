@@ -2,9 +2,10 @@ package source
 
 import (
 	"context"
+	"testing"
+
 	"github.com/stretchr/testify/suite"
 	"sigs.k8s.io/external-dns/endpoint"
-	"testing"
 )
 
 type mockSource struct {
@@ -62,7 +63,7 @@ func (s *SuppressIPv6TestSuite) TestEndpointsRemoved() {
 	}
 	ms := MockSource(endpoints)
 
-	ss := NewSuppressedSource(ms)
+	ss := NewSuppressIPv6Source(ms)
 
 	expected := []*endpoint.Endpoint{
 		&endpoint.Endpoint{
